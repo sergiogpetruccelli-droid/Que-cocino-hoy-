@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="¿Qué como?"/>
+<meta name="theme-color" content="#bf360c"/>
+<title>¿Qué como?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --orange:   #ff6d3b;
+    --deep:     #c0360c;
+    --cream:    #fdf6f0;
+    --warm:     #fff8f4;
+    --muted:    #9a7060;
+    --dark:     #2e1508;
+    --chip-bg:  #ffe8dd;
+    --chip-txt: #c0360c;
+    --card-sh:  0 4px 24px rgba(60,20,0,.10);
+    --ease:     cubic-bezier(.4,0,.2,1);
+  }
+
+  html, body {
+    height: 100%; overflow: hidden;
+    background: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── SHELL ── */
+  #app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    background: var(--cream);
+    max-width: 430px; margin: 0 auto;
+    overflow: hidden;
+  }
+
+  /* ── VIEWS ── */
+  .view {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .35s var(--ease);
+    will-change: transform;
+    background: var(--cream);
+  }
+  .view.active  { transform: translateX(0); }
+  .view.behind  { transform: translateX(-30%); }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(155deg, #bf360c 0%, #ff6d3b 55%, #ffad8a 100%);
+    padding: env(safe-area-inset-top, 44px) 28px 36px;
+    position: relative; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: rgba(255,255,255,.07);
+  }
+  .hero::after {
+    content: '';
+    position: absolute; bottom: -40px; left: -30px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: rgba(255,255,255,.05);
+  }
+  .hero-inner { position: relative; z-index: 1; text-align: center; }
+  .hero-emoji { font-size: 54px; display: block; margin-bottom: 10px;
+    filter: drop-shadow(0 6px 12px rgba(0,0,0,.25));
+    animation: float 3s ease-in-out infinite; }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; color: #fff;
+    text-shadow: 0 2px 16px rgba(0,0,0,.2);
+    line-height: 1;
+  }
+  .hero p { color: rgba(255,255,255,.85); font-size: 14px; margin-top: 8px; }
+
+  /* ── SCROLL CONTENT ── */
+  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 16px 100px; }
+
+  /* ── LABEL ── */
+  .label {
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+  }
+
+  /* ── INPUT ROW ── */
+  .input-wrap { display: flex; gap: 10px; margin-bottom: 16px; }
+  .input-wrap input {
+    flex: 1; padding: 14px 16px; border-radius: 18px;
+    border: 2px solid #e8d5c8; background: #fff;
+    font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--dark);
+    outline: none; transition: border-color .2s;
+  }
+  .input-wrap input:focus { border-color: var(--orange); }
+  .input-wrap input::placeholder { color: #c0a898; }
+  .add-btn {
+    width: 50px; height: 50px; border-radius: 18px; border: none; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--orange), var(--deep));
+    color: #fff; font-size: 26px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(255,109,59,.45);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .12s, box-shadow .12s;
+    -webkit-appearance: none;
+  }
+  .add-btn:active { transform: scale(.93); box-shadow: 0 2px 8px rgba(255,109,59,.3); }
+
+  /* ── CHIPS ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; margin-bottom: 20px; }
+  .chip {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--chip-bg); border: 1.5px solid #ffc4ad; border-radius: 20px;
+    padding: 6px 8px 6px 12px;
+    animation: popIn .2s var(--ease);
+  }
+  @keyframes popIn { from { transform: scale(.75); opacity:0; } to { transform: scale(1); opacity:1; } }
+  .chip span { font-size: 13px; color: var(--chip-txt); font-weight: 500; }
+  .chip button {
+    background: none; border: none; color: #e06040; font-size: 17px;
+    cursor: pointer; line-height: 1; padding: 0 2px;
+  }
+
+  /* ── SUGGESTIONS ── */
+  .sug-wrap { margin-bottom: 24px; }
+  .sug-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .sug-btn {
+    padding: 8px 14px; border-radius: 20px; border: 1.5px solid #e0cfc8;
+    background: #fff; font-size: 13px; color: #5a3020; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all .15s;
+  }
+  .sug-btn:active { background: var(--chip-bg); border-color: var(--orange); }
+
+  /* ── CTA ── */
+  .cta {
+    width: 100%; padding: 17px; border-radius: 22px; border: none;
+    background: linear-gradient(135deg, var(--orange) 0%, var(--deep) 100%);
+    color: #fff; font-size: 16px; font-weight: 700; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(255,109,59,.45);
+    transition: opacity .2s, transform .15s, box-shadow .15s;
+    -webkit-appearance: none;
+  }
+  .cta:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+  .cta:not(:disabled):active { transform: scale(.97); box-shadow: 0 4px 14px rgba(255,109,59,.35); }
+  .cta-hint { text-align: center; font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+  /* ── RESULTS HEADER ── */
+  .results-header {
+    display: flex; align-items: center; gap: 12;
+    padding: calc(env(safe-area-inset-top, 44px) + 8px) 20px 14px;
+    background: #fff; border-bottom: 1px solid #f0e0d8; flex-shrink: 0;
+    gap: 12px;
+  }
+  .back-btn {
+    background: #fff3ee; border: none; border-radius: 14px;
+    padding: 8px 14px; font-size: 18px; color: var(--deep);
+    cursor: pointer; font-weight: 700; flex-shrink: 0;
+  }
+  .results-header h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--dark); }
+
+  /* ── ING SUMMARY ── */
+  .ing-summary {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    padding: 10px 16px; background: #fff8f5; border-bottom: 1px solid #f0e0d8;
+    flex-shrink: 0;
+  }
+  .ing-summary .lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .ing-pill { background: #ffe0d0; color: var(--deep); border-radius: 10px; padding: 3px 9px; font-size: 11px; font-weight: 500; }
+
+  /* ── LOADING ── */
+  .loading-box { display: flex; flex-direction: column; align-items: center; padding: 70px 0; gap: 18px; }
+  .spinner {
+    width: 44px; height: 44px; border: 3px solid #f0e0d8; border-top-color: var(--orange);
+    border-radius: 50%; animation: spin .75s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-box p { color: var(--muted); font-size: 14px; }
+
+  /* ── ERROR ── */
+  .error-box {
+    margin: 24px 0; padding: 20px; border-radius: 18px;
+    background: #fff0f0; border: 1.5px solid #ffcccc; text-align: center; color: #c04040;
+    font-size: 14px;
+  }
+
+  /* ── RECIPE CARDS ── */
+  .recipe-card {
+    width: 100%; background: #fff; border: none; border-radius: 22px;
+    padding: 16px; margin-bottom: 14px; display: flex; align-items: center; gap: 14px;
+    cursor: pointer; text-align: left; box-shadow: var(--card-sh);
+    transition: transform .15s, box-shadow .15s;
+    -webkit-appearance: none;
+  }
+  .recipe-card:active { transform: scale(.97); box-shadow: 0 2px 12px rgba(60,20,0,.08); }
+  .card-icon {
+    width: 60px; height: 60px; border-radius: 18px; background: #fff3ee;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; flex-shrink: 0;
+  }
+  .card-body { flex: 1; }
+  .card-body h3 { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--dark); margin-bottom: 4px; }
+  .card-body p  { font-size: 12px; color: #8a6050; line-height: 1.45; }
+  .card-meta { display: flex; gap: 12px; margin-top: 6px; }
+  .card-meta .time { font-size: 11px; color: var(--muted); }
+  .card-meta .diff { font-size: 11px; font-weight: 600; }
+  .card-arrow { font-size: 26px; color: #ddc8be; flex-shrink: 0; }
+
+  /* ── DETAIL HEADER ── */
+  .detail-hero {
+    background: linear-gradient(145deg, #c0360c 0%, #ff6d3b 60%, #ffad8a 100%);
+    padding: calc(env(safe-area-inset-top, 44px) + 8px) 24px 32px;
+    position: relative; overflow: hidden; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+  }
+  .detail-hero::before {
+    content: ''; position: absolute; top: -50px; right: -50px;
+    width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(255,255,255,.08);
+  }
+  .detail-back {
+    position: absolute; top: calc(env(safe-area-inset-top, 44px) + 10px); left: 16px;
+    background: rgba(255,255,255,.25); border: none; border-radius: 14px;
+    padding: 8px 14px; color: #fff; font-size: 18px; font-weight: 700; cursor: pointer;
+    z-index: 2;
+  }
+  .detail-emoji { font-size: 60px; filter: drop-shadow(0 6px 14px rgba(0,0,0,.25)); margin-bottom: 12px; position: relative; z-index: 1; }
+  .detail-hero h2 { font-family: 'Playfair Display', serif; font-size: 26px; color: #fff; position: relative; z-index: 1; }
+  .detail-hero .desc { font-size: 13px; color: rgba(255,255,255,.85); margin-top: 8px; line-height: 1.5; position: relative; z-index: 1; }
+  .meta-row { display: flex; gap: 10px; margin-top: 16px; position: relative; z-index: 1; }
+  .meta-badge {
+    background: rgba(255,255,255,.25); border-radius: 20px; padding: 6px 16px;
+    font-size: 12px; color: #fff; font-weight: 600;
+  }
+
+  /* ── DETAIL BODY ── */
+  .section { margin-bottom: 28px; }
+  .section-title {
+    font-family: 'Playfair Display', serif; font-size: 17px; color: var(--dark); margin-bottom: 14px;
+  }
+  .ing-used { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ing-used span {
+    background: #fff3ee; border: 1.5px solid #ffc4ad; border-radius: 20px;
+    padding: 6px 14px; font-size: 13px; color: var(--deep); font-weight: 500;
+  }
+  .step {
+    display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start;
+    animation: slideUp .3s var(--ease) both;
+  }
+  @keyframes slideUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+  .step-num {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--orange), var(--deep));
+    color: #fff; font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .step p { font-size: 14px; color: #4a2a18; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══ VIEW: HOME ══ -->
+  <div class="view active" id="view-home">
+    <div class="hero">
+      <div class="hero-inner">
+        <span class="hero-emoji">🍳</span>
+        <h1>¿Qué como?</h1>
+        <p>Decime qué tenés y te digo qué cocinar</p>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <p class="label">Agregá tus ingredientes</p>
+      <div class="input-wrap">
+        <input id="ing-input" type="text" placeholder="ej: huevos, queso, papa…" autocomplete="off" autocorrect="off"/>
+        <button class="add-btn" onclick="addIngrediente()">+</button>
+      </div>
+
+      <div class="chips" id="chips-container"></div>
+
+      <div class="sug-wrap" id="sug-wrap">
+        <p class="label">Sugerencias rápidas</p>
+        <div class="sug-grid" id="sug-grid"></div>
+      </div>
+
+      <button class="cta" id="cta-btn" onclick="buscarRecetas()" disabled>
+        🔍 Ver qué puedo cocinar
+      </button>
+      <p class="cta-hint" id="cta-hint"></p>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: RESULTS ══ -->
+  <div class="view" id="view-results">
+    <div class="results-header">
+      <button class="back-btn" onclick="goTo('home')">←</button>
+      <h2>Tus recetas</h2>
+    </div>
+    <div class="ing-summary" id="ing-summary"></div>
+    <div class="scroll" id="results-body"></div>
+  </div>
+
+  <!-- ══ VIEW: DETAIL ══ -->
+  <div class="view" id="view-detail">
+    <div class="detail-hero" id="detail-hero">
+      <button class="detail-back" onclick="goTo('results')">←</button>
+      <div class="detail-emoji" id="d-emoji"></div>
+      <h2 id="d-name"></h2>
+      <p class="desc" id="d-desc"></p>
+      <div class="meta-row">
+        <span class="meta-badge" id="d-time"></span>
+        <span class="meta-badge" id="d-diff"></span>
+      </div>
+    </div>
+    <div class="scroll">
+      <div class="section">
+        <p class="section-title">🧺 Ingredientes que usás</p>
+        <div class="ing-used" id="d-ings"></div>
+      </div>
+      <div class="section">
+        <p class="section-title">👨‍🍳 Pasos a seguir</p>
+        <div id="d-steps"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SUGERENCIAS = ["arroz","pollo","cebolla","ajo","tomate","huevos","papa","queso","carne","zanahoria","lentejas","pasta"];
+let ingredientes = [];
+let currentView = "home";
+
+/* ── NAV ── */
+function goTo(name) {
+  document.getElementById("view-" + currentView).classList.remove("active");
+  document.getElementById("view-" + currentView).classList.add("behind");
+
+  if (name === "home" || (name === "results" && currentView === "detail")) {
+    // going back
+    document.getElementById("view-" + currentView).classList.remove("behind");
+    document.getElementById("view-" + currentView).style.transition = "none";
+    document.getElementById("view-" + currentView).style.transform = "translateX(100%)";
+    setTimeout(() => document.getElementById("view-" + currentView).style.transition = "", 10);
+  }
+
+  const prev = currentView;
+  currentView = name;
+  const next = document.getElementById("view-" + name);
+  next.classList.remove("behind");
+  next.classList.add("active");
+
+  // clean up prev
+  setTimeout(() => {
+    document.getElementById("view-" + prev).classList.remove("behind");
+  }, 370);
+}
+
+/* ── INGREDIENTS ── */
+function addIngrediente() {
+  const input = document.getElementById("ing-input");
+  const val = input.value.trim().toLowerCase();
+  if (!val || ingredientes.includes(val)) { input.value = ""; return; }
+  ingredientes.push(val);
+  input.value = "";
+  renderChips();
+  updateCTA();
+  hideSugerencias();
+  input.focus();
+}
+
+function removeIngrediente(ing) {
+  ingredientes = ingredientes.filter(i => i !== ing);
+  renderChips();
+  updateCTA();
+  if (ingredientes.length === 0) showSugerencias();
+}
+
+function addSugerencia(s) {
+  if (!ingredientes.includes(s)) { ingredientes.push(s); renderChips(); updateCTA(); hideSugerencias(); }
+}
+
+function renderChips() {
+  const c = document.getElementById("chips-container");
+  c.innerHTML = ingredientes.map(ing => `
+    <div class="chip">
+      <span>${ing}</span>
+      <button onclick="removeIngrediente('${ing}')">×</button>
+    </div>`).join("");
+}
+
+function updateCTA() {
+  const btn = document.getElementById("cta-btn");
+  const hint = document.getElementById("cta-hint");
+  btn.disabled = ingredientes.length === 0;
+  hint.textContent = ingredientes.length > 0
+    ? `${ingredientes.length} ingrediente${ingredientes.length > 1 ? "s" : ""} listo${ingredientes.length > 1 ? "s" : ""} ✓`
+    : "";
+}
+
+function hideSugerencias() { document.getElementById("sug-wrap").style.display = "none"; }
+function showSugerencias() { document.getElementById("sug-wrap").style.display = ""; }
+
+/* ── SUGERENCIAS GRID ── */
+(function() {
+  const grid = document.getElementById("sug-grid");
+  grid.innerHTML = SUGERENCIAS.map(s =>
+    `<button class="sug-btn" onclick="addSugerencia('${s}')">${s}</button>`).join("");
+})();
+
+/* ── INPUT ENTER ── */
+document.getElementById("ing-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addIngrediente(); }
+});
+
+/* ── DIFF COLOR ── */
+function diffColor(d) {
+  if (d === "Fácil") return "#4caf8a";
+  if (d === "Media") return "#f0a040";
+  return "#e06060";
+}
+
+/* ── FETCH RECETAS ── */
+async function buscarRecetas() {
+  goTo("results");
+
+  // summary bar
+  const summary = document.getElementById("ing-summary");
+  summary.innerHTML = `<span class="lbl">Con:</span>` +
+    ingredientes.map(i => `<span class="ing-pill">${i}</span>`).join("");
+
+  const body = document.getElementById("results-body");
+  body.innerHTML = `<div class="loading-box"><div class="spinner"></div><p>Consultando al chef…</p></div>`;
+
+  const system = `Eres un chef experto y amigable. Cuando el usuario te dé ingredientes, sugiere 3 recetas posibles.
+Responde SOLO en JSON válido, sin markdown, sin backticks, sin texto adicional, con este formato exacto:
+{"recetas":[{"nombre":"...","emoji":"...","tiempo":"X min","dificultad":"Fácil|Media|Difícil","descripcion":"...","ingredientesUsados":["..."],"pasos":["Paso 1: ...","Paso 2: ..."]}]}`;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1500,
+        system,
+        messages: [{ role: "user", content: `Tengo: ${ingredientes.join(", ")}. ¿Qué puedo cocinar?` }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).find(b => b.type === "text")?.text || "";
+    const clean = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(clean);
+    renderRecetas(parsed.recetas);
+  } catch(e) {
+    body.innerHTML = `<div class="error-box">⚠️ No pude obtener recetas. Revisá tu conexión e intentá de nuevo.</div>`;
+  }
+}
+
+/* ── RENDER RECETAS ── */
+let recetasData = [];
+function renderRecetas(recetas) {
+  recetasData = recetas;
+  const body = document.getElementById("results-body");
+  body.innerHTML = recetas.map((r, i) => `
+    <button class="recipe-card" onclick="openDetail(${i})">
+      <div class="card-icon">${r.emoji}</div>
+      <div class="card-body">
+        <h3>${r.nombre}</h3>
+        <p>${r.descripcion}</p>
+        <div class="card-meta">
+          <span class="time">⏱ ${r.tiempo}</span>
+          <span class="diff" style="color:${diffColor(r.dificultad)}">${r.dificultad}</span>
+        </div>
+      </div>
+      <span class="card-arrow">›</span>
+    </button>`).join("");
+}
+
+/* ── OPEN DETAIL ── */
+function openDetail(i) {
+  const r = recetasData[i];
+  document.getElementById("d-emoji").textContent = r.emoji;
+  document.getElementById("d-name").textContent = r.nombre;
+  document.getElementById("d-desc").textContent = r.descripcion;
+  document.getElementById("d-time").textContent = "⏱ " + r.tiempo;
+  const diffEl = document.getElementById("d-diff");
+  diffEl.textContent = r.dificultad;
+  diffEl.style.background = diffColor(r.dificultad);
+
+  document.getElementById("d-ings").innerHTML =
+    r.ingredientesUsados.map(ing => `<span>${ing}</span>`).join("");
+
+  document.getElementById("d-steps").innerHTML =
+    r.pasos.map((paso, idx) => `
+      <div class="step" style="animation-delay:${idx * .07}s">
+        <div class="step-num">${idx + 1}</div>
+        <p>${paso.replace(/^Paso \d+:\s*/i, "")}</p>
+      </div>`).join("");
+
+  goTo("detail");
+}
+</script>
+</body>
+</html>
